@@ -72,6 +72,7 @@ let fireImg;
 
 let fontImg;
 let hudGfx;
+let debugGfx;
 let lastScore = null;
 let lastHealth = null;
 let lastMaxHealth = null;
@@ -94,6 +95,19 @@ let hurtSound;
 let particles = [];
 let shakeTimer = 0;
 let shakeStrength = 0;
+
+// --- DEBUG SCREEN ---
+let debugMode = false;
+let moonGravity = false;
+let showProbes = false;
+let infiniteHealth = false;
+let freezeBoars = false;
+let hitboxDebug = false;
+const NORMAL_GRAVITY = 10;
+const MOON_GRAVITY = 1.8;
+
+// --- LEVELS ---
+let currentLevel = 1;
 
 // --- TILE MAP ---
 let level = [
@@ -226,6 +240,10 @@ function setup() {
   hudGfx = createGraphics(VIEWW, VIEWH);
   hudGfx.noSmooth();
   hudGfx.pixelDensity(1);
+
+  debugGfx = createGraphics(VIEWW, VIEWH);
+  debugGfx.noSmooth();
+  debugGfx.pixelDensity(1);
 
   makeWorld();
 
@@ -432,6 +450,49 @@ function draw() {
   if (won) drawWinOverlay();
 
   if ((dead || won) && kb.presses("r")) restartGame();
+
+  // --- DEBUG TOGGLE ---
+  if (kb.presses("`")) debugMode = !debugMode;
+
+  // Debug sub-toggles (only active when debug screen is open)
+  if (debugMode) {
+    // [G] toggle moon gravity
+    if (kb.presses("g")) {
+      moonGravity = !moonGravity;
+      world.gravity.y = moonGravity ? MOON_GRAVITY : NORMAL_GRAVITY;
+    }
+    // [P] toggle boar probe visibility
+    if (kb.presses("p")) {
+      showProbes = !showProbes;
+      for (const e of boar) {
+        if (e.footProbe)  e.footProbe.visible  = showProbes;
+        if (e.frontProbe) e.frontProbe.visible = showProbes;
+        if (e.groundProbe) e.groundProbe.visible = showProbes;
+      }
+    }
+    // [H] toggle hitbox debug (p5play built-in)
+    if (kb.presses("h")) {
+      hitboxDebug = !hitboxDebug;
+      allSprites.debug = hitboxDebug;
+    }
+    // [I] toggle infinite health
+    if (kb.presses("i")) {
+      infiniteHealth = !infiniteHealth;
+    }
+    // [F] toggle freeze boars
+    if (kb.presses("f")) {
+      freezeBoars = !freezeBoars;
+    }
+  }
+
+  // Infinite health — keep topped up every frame when on
+  if (infiniteHealth && !dead) {
+    health = maxHealth;
+    invulnTimer = max(invulnTimer, 4); // prevents damage register
+  }
+
+  if (debugMode) drawDebugScreen();
+  else drawDebugHint();
 }
 
 function applyIntegerScale() {
@@ -774,6 +835,96 @@ function drawWinOverlay() {
   camera.on();
 }
 
+function drawDebugScreen() {
+  camera.off();
+
+  const g = debugGfx;
+  g.clear();
+  g.drawingContext.imageSmoothingEnabled = false;
+  g.imageMode(CORNER);
+
+  const PAD = 5;
+  const LINE_H = GLYPH_H + 3;
+  const lines = [
+    "DEBUG ` TO CLOSE",
+    `[G] GRAVITY:${moonGravity ? "MOON" : "NORM"} ${world.gravity.y.toFixed(1)}`,
+    `[P] PROBES: ${showProbes ? "ON " : "OFF"}`,
+    `[H] HITBOX: ${hitboxDebug ? "ON " : "OFF"}`,
+    `[I] INF HP: ${infiniteHealth ? "ON " : "OFF"}`,
+    `[F] FREEZE: ${freezeBoars ? "ON " : "OFF"}`,
+    `POS  ${player.x.toFixed(1)} ${player.y.toFixed(1)}`,
+    `VEL  ${player.vel.x.toFixed(2)} ${player.vel.y.toFixed(2)}`,
+    `ANI  ${(player.ani?.name ?? "?").toUpperCase()}`,
+    `GND:${isPlayerGrounded() ? "Y" : "N"} ATK:${attacking ? "Y" : "N"}`,
+    `INV:${invulnTimer} KNK:${knockTimer}`,
+    `SCORE ${score}/${WIN_SCORE}  HP ${health}/${maxHealth}`,
+    `BOARS ${[...boar].filter(e => !e.dead).length}`,
+    `FPS   ${Math.round(frameRate())}`,
+  ];
+
+  const longestLine = lines.reduce((a, b) => (a.length > b.length ? a : b));
+  const panelW = PAD * 2 + longestLine.length * GLYPH_W + PAD;
+  const panelH = PAD * 2 + lines.length * LINE_H + 2;
+
+  // Dark panel background
+  g.noStroke();
+  g.fill(0, 0, 0, 200);
+  g.rectMode(CORNER);
+  g.rect(4, 4, panelW, panelH);
+
+  // Green border
+  g.stroke(0, 200, 80);
+  g.strokeWeight(1);
+  g.noFill();
+  g.rect(4, 4, panelW, panelH);
+  g.noStroke();
+
+  for (let i = 0; i < lines.length; i++) {
+    const yy = 4 + PAD + i * LINE_H;
+    if (i === 0) {
+      drawOutlinedTextToGfx(g, lines[i], 4 + PAD, yy, "#ffdc00");
+    } else if (i <= 2) {
+      drawOutlinedTextToGfx(g, lines[i], 4 + PAD, yy, "#50cfff");
+    } else {
+      drawOutlinedTextToGfx(g, lines[i], 4 + PAD, yy, "#00e870");
+    }
+  }
+
+  imageMode(CORNER);
+  drawingContext.imageSmoothingEnabled = false;
+  image(g, 0, 0);
+
+  camera.on();
+}
+
+// Small persistent hint in bottom-left corner when debug is OFF
+function drawDebugHint() {
+  camera.off();
+
+  const g = debugGfx;
+  g.clear();
+  g.drawingContext.imageSmoothingEnabled = false;
+  g.imageMode(CORNER);
+
+  const msg = "` DEBUG";
+  const x = 4;
+  const y = VIEWH - GLYPH_H - 4;
+
+  // subtle dark backing
+  g.noStroke();
+  g.fill(0, 0, 0, 120);
+  g.rectMode(CORNER);
+  g.rect(x - 2, y - 1, msg.length * GLYPH_W + 4, GLYPH_H + 2);
+
+  drawOutlinedTextToGfx(g, msg, x, y, "#888888");
+
+  imageMode(CORNER);
+  drawingContext.imageSmoothingEnabled = false;
+  image(g, 0, 0);
+
+  camera.on();
+}
+
 function drawDeathOverlay() {
   camera.off();
   drawingContext.imageSmoothingEnabled = false;
@@ -866,6 +1017,11 @@ function boarGrounded(e) {
 
 function updateBoars() {
   if (won) {
+    for (const e of boar) e.vel.x = 0;
+    return;
+  }
+
+  if (freezeBoars) {
     for (const e of boar) e.vel.x = 0;
     return;
   }

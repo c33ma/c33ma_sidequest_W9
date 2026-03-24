@@ -1,27 +1,31 @@
 ## Project Title
-Side Quest Week 6: Fox Rescue Platformer
+Side Quest Week 6: Fox Rescue Platformer (Debug & Development Tools)
 
 ---
 ## Description
-This project builds on the platformer example by introducing reactive sound effects and visual feedback tied to player actions and collisions. The player controls a small fox exploring a forest platforming environment while rescuing lost leaves and avoiding hazards such as fire and roaming boars.
+This project builds on my previous Fox Rescue Platformer by adding a debug screen and additional development tools to support testing and iteration. The player still controls a fox navigating a forest platforming environment while rescuing leaves and avoiding hazards such as fire and boars.
 
-The focus of this iteration is on creating a more responsive and immersive gameplay experience. Player actions now trigger audiovisual feedback that reinforces interaction with the world. Jumping produces a cartoon-style jump sound and a small dust particle effect beneath the fox, emphasizing motion. When a leaf is rescued, sparkle particles appear alongside a chime sound to reward the player. If the fox takes damage from fire or enemies, a punch-style hurt sound plays while impact particles and a brief screen shake communicate the collision.
+The focus of this iteration is on improving the development process rather than core gameplay. A toggleable debug screen was added to display real-time information such as player position, velocity, animation state, timers, and frame rate. This allows for easier testing and understanding of how the game behaves during runtime.
 
-These additions enhance the feel of the game by making the environment more reactive and multisensory, improving player feedback while maintaining the original pixel-art platformer structure.
+Additional debug features were implemented to support development and testing. These include toggling moon gravity, enabling hitbox visibility, freezing enemies, and infinite health. These tools make it easier to test level design, enemy behaviour, and player interactions without constantly restarting the game.
+
+Overall, this update enhances the project by making the game easier to debug and iterate on, while keeping the original gameplay experience unchanged.
 
 ---
 ## Interaction Instructions
 - Use A/D or Left/Right Arrow Keys to move the fox.
-
 - Press W or Up Arrow to jump.
-
 - Press Space Bar to attack nearby boars.
-
 - Collect leaves scattered throughout the level to increase your rescue count.
-
 - Avoid hazards such as fire and enemies, which will damage the player.
-
 - Press R to restart the game after winning or losing.
+- Press ` (backtick) to toggle the debug screen.
+- While debug is active:
+- Press G to toggle moon gravity.
+- Press P to show/hide boar probes.
+- Press H to toggle hitbox outlines.
+- Press I to enable infinite health.
+- Press F to freeze/unfreeze boars.
 
 ---
 ## Assets
